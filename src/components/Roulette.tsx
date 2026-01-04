@@ -40,7 +40,7 @@ export function Roulette() {
     INITIAL_PLAYERS.map((p) => ({ ...p }))
   );
   const [isSpinning, setIsSpinning] = useState(false);
-  const [buttonText, setButtonText] = useState("ルーレット開始");
+  const [isStopping, setIsStopping] = useState(false);
   const [allowDuplicates, setAllowDuplicates] = useState(false);
   const [unlockedTypes, setUnlockedTypes] = useState<UnlockedTypes>({
     base: true,
@@ -99,23 +99,27 @@ export function Roulette() {
     };
   }, []);
 
-  const startRoulette = useCallback(async () => {
-    if (isSpinning) return;
+  const startRoulette = useCallback(() => {
+    if (isSpinning || isStopping) return;
     if (availableCharacters.length === 0) return;
 
     setIsSpinning(true);
-    setButtonText("抽選中...");
-
     setPlayers(INITIAL_PLAYERS.map((p) => ({ ...p })));
 
     players.forEach((_, index) => {
       startSpinInterval(index);
     });
+  }, [isSpinning, isStopping, players, availableCharacters, startSpinInterval]);
+
+  const stopRoulette = useCallback(async () => {
+    if (!isSpinning || isStopping) return;
+
+    setIsStopping(true);
 
     const selectedCharacters = selectRandomCharacters(allowDuplicates, availableCharacters);
 
     const spinPromises = players.map((_, index) => {
-      const duration = 1500 + index * 500;
+      const duration = 300 + index * 500;
       return new Promise<void>((resolve) => {
         setTimeout(() => {
           stopSpinInterval(index);
@@ -137,15 +141,14 @@ export function Roulette() {
     await Promise.all(spinPromises);
 
     setIsSpinning(false);
-    setButtonText("もう一度回す");
-  }, [isSpinning, players, allowDuplicates, availableCharacters, startSpinInterval, stopSpinInterval]);
+    setIsStopping(false);
+  }, [isSpinning, isStopping, players, allowDuplicates, availableCharacters, startSpinInterval, stopSpinInterval]);
 
   const resetRoulette = useCallback(() => {
-    if (isSpinning) return;
+    if (isSpinning || isStopping) return;
 
     setPlayers(INITIAL_PLAYERS.map((p) => ({ ...p })));
-    setButtonText("ルーレット開始");
-  }, [isSpinning]);
+  }, [isSpinning, isStopping]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -176,7 +179,7 @@ export function Roulette() {
               type="checkbox"
               checked={allowDuplicates}
               onChange={(e) => setAllowDuplicates(e.target.checked)}
-              disabled={isSpinning}
+              disabled={isSpinning || isStopping}
               className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
             />
             <span className="text-sm">キャラクター被りを許可</span>
@@ -186,7 +189,7 @@ export function Roulette() {
               type="checkbox"
               checked={unlockedTypes.unlock}
               onChange={(e) => setUnlockedTypes((prev) => ({ ...prev, unlock: e.target.checked }))}
-              disabled={isSpinning}
+              disabled={isSpinning || isStopping}
               className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
             />
             <span className="text-sm">解放キャラを含む</span>
@@ -196,7 +199,7 @@ export function Roulette() {
               type="checkbox"
               checked={unlockedTypes.dlc}
               onChange={(e) => setUnlockedTypes((prev) => ({ ...prev, dlc: e.target.checked }))}
-              disabled={isSpinning}
+              disabled={isSpinning || isStopping}
               className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
             />
             <span className="text-sm">DLCキャラを含む</span>
@@ -205,19 +208,31 @@ export function Roulette() {
 
         {/* コントロールボタン */}
         <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={startRoulette}
-            disabled={isSpinning}
-            className="px-8 py-3 bg-nightreign-gold text-nightreign-bg font-bold text-lg rounded
-                       hover:bg-yellow-500 transition-all duration-300 shadow-[0_0_20px_rgba(201,162,39,0.4)]
-                       disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-          >
-            {buttonText}
-          </button>
+          {!isSpinning && !isStopping ? (
+            <button
+              onClick={startRoulette}
+              disabled={availableCharacters.length === 0}
+              className="px-8 py-3 bg-nightreign-gold text-nightreign-bg font-bold text-lg rounded
+                         hover:bg-yellow-500 transition-all duration-300 shadow-[0_0_20px_rgba(201,162,39,0.4)]
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              Start
+            </button>
+          ) : (
+            <button
+              onClick={stopRoulette}
+              disabled={isStopping}
+              className="px-8 py-3 bg-red-600 text-white font-bold text-lg rounded
+                         hover:bg-red-700 transition-all duration-300 shadow-[0_0_20px_rgba(220,38,38,0.4)]
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+            >
+              {isStopping ? "停止中..." : "Stop"}
+            </button>
+          )}
 
           <button
             onClick={resetRoulette}
-            disabled={isSpinning}
+            disabled={isSpinning || isStopping}
             className="px-6 py-3 bg-gray-700 text-gray-300 font-medium rounded
                        hover:bg-gray-600 transition-all duration-300
                        disabled:opacity-50 disabled:cursor-not-allowed"
