@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - TZ=Asia/Tokyo
+      - LANG=en_US.UTF-8
+      - LC_ALL=C.UTF-8
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    tty: true

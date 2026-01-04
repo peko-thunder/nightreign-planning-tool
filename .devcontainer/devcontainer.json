@@ -1,0 +1,47 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+  "name": "dev-container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "hostRequirements": {
+    "memory": "8gb"
+  },
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
+
+  // Configure tool-specific properties.
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      "settings": {
+        "chat.disableAIFeatures": true
+      },
+      "extensions": [
+        "streetsidesoftware.code-spell-checker",
+        "anthropic.claude-code"
+      ]
+    }
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [9000],
+
+  // Use 'portsAttributes' to set default properties for specific forwarded ports.
+  // More info: https://containers.dev/implementors/json_reference/#port-attributes
+  // "portsAttributes": {
+  //   "9000": {
+  //     "label": "Hello Remote World",
+  //     "onAutoForward": "notify"
+  //   }
+  // },
+
+  "mounts": [
+    "source=claude-code-bash-history-${devcontainerId},target=/command-history,type=volume",
+    "source=claude-code-config-${devcontainerId},target=/home/vscode/.claude,type=volume"
+  ],
+
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "bash ${containerWorkspaceFolder}/.devcontainer/scripts/install-claude-code.sh && bash ${containerWorkspaceFolder}/.devcontainer/scripts/persist-bash-history.sh",
+  "waitFor": "postCreateCommand"
+}
