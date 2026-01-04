@@ -212,7 +212,7 @@ export function Roulette() {
             <button
               onClick={startRoulette}
               disabled={availableCharacters.length === 0}
-              className="px-8 py-3 bg-nightreign-gold text-nightreign-bg font-bold text-lg rounded
+              className="min-w-[160px] px-8 py-3 bg-nightreign-gold text-nightreign-bg font-bold text-lg rounded
                          hover:bg-yellow-500 transition-all duration-300 shadow-[0_0_20px_rgba(201,162,39,0.4)]
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
@@ -222,7 +222,7 @@ export function Roulette() {
             <button
               onClick={stopRoulette}
               disabled={isStopping}
-              className="px-8 py-3 bg-red-600 text-white font-bold text-lg rounded
+              className="min-w-[160px] px-8 py-3 bg-red-600 text-white font-bold text-lg rounded
                          hover:bg-red-700 transition-all duration-300 shadow-[0_0_20px_rgba(220,38,38,0.4)]
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
