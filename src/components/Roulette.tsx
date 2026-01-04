@@ -226,7 +226,7 @@ export function Roulette() {
                          hover:bg-red-700 transition-all duration-300 shadow-[0_0_20px_rgba(220,38,38,0.4)]
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              {isStopping ? "停止中..." : "Stop"}
+              {isStopping ? "Stopping..." : "Stop"}
             </button>
           )}
 
@@ -237,7 +237,7 @@ export function Roulette() {
                        hover:bg-gray-600 transition-all duration-300
                        disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            リセット
+            Reset
           </button>
         </div>
       </div>
