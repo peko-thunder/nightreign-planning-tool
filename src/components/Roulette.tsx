@@ -161,14 +161,15 @@ export function Roulette() {
 
       {/* 下部：プレイヤースロット */}
       <div>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="flex justify-center gap-3 mb-4">
           {players.map((player, index) => (
-            <PlayerSlot
-              key={player.id}
-              player={player}
-              isSpinning={isSpinning && !player.character}
-              spinningCharacter={spinningCharacters[index]}
-            />
+            <div key={player.id} className="w-52">
+              <PlayerSlot
+                player={player}
+                isSpinning={isSpinning && !player.character}
+                spinningCharacter={spinningCharacters[index]}
+              />
+            </div>
           ))}
         </div>
 
