@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { CHARACTERS, INITIAL_PLAYERS, type Player, type Character, type PlayerColor } from "@/data/characters";
+import { CHARACTERS, INITIAL_PLAYERS, type Player, type Character, type PlayerColor, type CharacterType } from "@/data/characters";
 import { CharacterSelect } from "./CharacterSelect";
 import { PlayerSlot } from "./PlayerSlot";
+
+type UnlockedTypes = Record<CharacterType, boolean>;
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -14,18 +16,23 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-function selectRandomCharacters(allowDuplicates: boolean): Character[] {
-  if (allowDuplicates) {
-    return Array.from({ length: 3 }, () =>
-      CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)]
-    );
-  }
-  const shuffled = shuffleArray(CHARACTERS);
-  return shuffled.slice(0, 3);
+function getAvailableCharacters(unlockedTypes: UnlockedTypes): Character[] {
+  return CHARACTERS.filter((c) => unlockedTypes[c.type]);
 }
 
-function getRandomCharacter(): Character {
-  return CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)];
+function selectRandomCharacters(allowDuplicates: boolean, availableCharacters: Character[]): Character[] {
+  if (availableCharacters.length === 0) return [];
+  if (allowDuplicates) {
+    return Array.from({ length: 3 }, () =>
+      availableCharacters[Math.floor(Math.random() * availableCharacters.length)]
+    );
+  }
+  const shuffled = shuffleArray(availableCharacters);
+  return shuffled.slice(0, Math.min(3, shuffled.length));
+}
+
+function getRandomCharacter(availableCharacters: Character[]): Character {
+  return availableCharacters[Math.floor(Math.random() * availableCharacters.length)];
 }
 
 export function Roulette() {
@@ -35,8 +42,23 @@ export function Roulette() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [buttonText, setButtonText] = useState("ルーレット開始");
   const [allowDuplicates, setAllowDuplicates] = useState(false);
+  const [unlockedTypes, setUnlockedTypes] = useState<UnlockedTypes>({
+    base: true,
+    unlock: true,
+    dlc: true,
+  });
   const [spinningCharacters, setSpinningCharacters] = useState<(Character | null)[]>([null, null, null]);
   const spinIntervalsRef = useRef<(NodeJS.Timeout | null)[]>([null, null, null]);
+
+  const availableCharacters = useMemo(
+    () => getAvailableCharacters(unlockedTypes),
+    [unlockedTypes]
+  );
+
+  const lockedCharacterIds = useMemo(
+    () => new Set(CHARACTERS.filter((c) => !unlockedTypes[c.type]).map((c) => c.id)),
+    [unlockedTypes]
+  );
 
   const selectedCharactersMap = useMemo(() => {
     const map = new Map<string, PlayerColor[]>();
@@ -61,11 +83,11 @@ export function Roulette() {
     spinIntervalsRef.current[index] = setInterval(() => {
       setSpinningCharacters((prev) => {
         const next = [...prev];
-        next[index] = getRandomCharacter();
+        next[index] = getRandomCharacter(availableCharacters);
         return next;
       });
     }, 80);
-  }, [stopSpinInterval]);
+  }, [stopSpinInterval, availableCharacters]);
 
   useEffect(() => {
     return () => {
@@ -79,6 +101,7 @@ export function Roulette() {
 
   const startRoulette = useCallback(async () => {
     if (isSpinning) return;
+    if (availableCharacters.length === 0) return;
 
     setIsSpinning(true);
     setButtonText("抽選中...");
@@ -89,7 +112,7 @@ export function Roulette() {
       startSpinInterval(index);
     });
 
-    const selectedCharacters = selectRandomCharacters(allowDuplicates);
+    const selectedCharacters = selectRandomCharacters(allowDuplicates, availableCharacters);
 
     const spinPromises = players.map((_, index) => {
       const duration = 1500 + index * 500;
@@ -115,7 +138,7 @@ export function Roulette() {
 
     setIsSpinning(false);
     setButtonText("もう一度回す");
-  }, [isSpinning, players, allowDuplicates, startSpinInterval, stopSpinInterval]);
+  }, [isSpinning, players, allowDuplicates, availableCharacters, startSpinInterval, stopSpinInterval]);
 
   const resetRoulette = useCallback(() => {
     if (isSpinning) return;
@@ -130,6 +153,7 @@ export function Roulette() {
       <CharacterSelect
         selectedCharacters={selectedCharactersMap}
         spinningCharacters={spinningCharacters}
+        lockedCharacterIds={lockedCharacterIds}
       />
 
       {/* 下部：プレイヤースロット */}
@@ -146,7 +170,7 @@ export function Roulette() {
         </div>
 
         {/* オプション */}
-        <div className="flex items-center justify-center mb-3">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-3">
           <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -156,6 +180,26 @@ export function Roulette() {
               className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
             />
             <span className="text-sm">キャラクター被りを許可</span>
+          </label>
+          <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={unlockedTypes.unlock}
+              onChange={(e) => setUnlockedTypes((prev) => ({ ...prev, unlock: e.target.checked }))}
+              disabled={isSpinning}
+              className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
+            />
+            <span className="text-sm">解放キャラを含む</span>
+          </label>
+          <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={unlockedTypes.dlc}
+              onChange={(e) => setUnlockedTypes((prev) => ({ ...prev, dlc: e.target.checked }))}
+              disabled={isSpinning}
+              className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
+            />
+            <span className="text-sm">DLCキャラを含む</span>
           </label>
         </div>
 

@@ -7,12 +7,14 @@ import { CharacterIcon } from "./CharacterIcon";
 interface CharacterSelectProps {
   selectedCharacters: Map<string, PlayerColor[]>;
   spinningCharacters?: (Character | null)[];
+  lockedCharacterIds?: Set<string>;
   onCharacterClick?: (character: Character) => void;
 }
 
 export function CharacterSelect({
   selectedCharacters,
   spinningCharacters,
+  lockedCharacterIds,
   onCharacterClick,
 }: CharacterSelectProps) {
   const getPlayerColors = (characterId: string): PlayerColor[] => {
@@ -34,6 +36,7 @@ export function CharacterSelect({
         {CHARACTERS.map((character) => {
           const playerColors = getPlayerColors(character.id);
           const isSpinningTarget = spinningCharacterIds.has(character.id);
+          const isLocked = lockedCharacterIds?.has(character.id) ?? false;
           return (
             <CharacterIcon
               key={character.id}
@@ -41,6 +44,7 @@ export function CharacterSelect({
               size="md"
               isSelected={playerColors.length > 0}
               isSpinningTarget={isSpinningTarget}
+              isLocked={isLocked}
               playerColors={playerColors}
               onClick={onCharacterClick ? () => onCharacterClick(character) : undefined}
             />

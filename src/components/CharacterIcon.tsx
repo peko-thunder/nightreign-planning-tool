@@ -9,6 +9,7 @@ interface CharacterIconProps {
   size?: "sm" | "md" | "lg";
   isSelected?: boolean;
   isSpinningTarget?: boolean;
+  isLocked?: boolean;
   playerColors?: PlayerColor[];
   onClick?: () => void;
 }
@@ -45,6 +46,7 @@ export function CharacterIcon({
   size = "md",
   isSelected = false,
   isSpinningTarget = false,
+  isLocked = false,
   playerColors = [],
   onClick,
 }: CharacterIconProps) {
@@ -66,6 +68,26 @@ export function CharacterIcon({
     }
     return "";
   })();
+
+  if (isLocked) {
+    return (
+      <div
+        className={`
+          ${sizeStyle.className}
+          relative overflow-hidden
+          transition-all duration-75
+        `}
+        style={{
+          background: "linear-gradient(160deg, #1a1a2420 0%, #1a1a2450 50%, #1a1a2430 100%)",
+        }}
+      >
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-3xl text-gray-600 font-bold select-none">?</span>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div
