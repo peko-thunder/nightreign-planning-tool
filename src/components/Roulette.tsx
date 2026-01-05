@@ -68,6 +68,7 @@ export function Roulette() {
   });
   const [spinningCharacters, setSpinningCharacters] = useState<(Character | null)[]>([null, null, null]);
   const spinIntervalsRef = useRef<(NodeJS.Timeout | null)[]>([null, null, null]);
+  const prevExcludePreviousRef = useRef(excludePreviousCharacters);
 
   const availableCharacters = useMemo(
     () => getAvailableCharacters(unlockedTypes),
@@ -118,12 +119,22 @@ export function Roulette() {
     };
   }, []);
 
-  // 除外オプションが無効化されたら前回のキャラクターをクリア
+  // 除外オプションの変化を監視
   useEffect(() => {
-    if (!excludePreviousCharacters) {
-      setLastSelectedCharacters(new Set());
+    const prevValue = prevExcludePreviousRef.current;
+
+    if (!prevValue && excludePreviousCharacters) {
+      // オプション有効化時（false → true）：現在の選択結果を除外対象に設定
+      if (lastSelectedCharacters.size > 0) {
+        setPreviousCharacters(new Set(lastSelectedCharacters));
+      }
+    } else if (prevValue && !excludePreviousCharacters) {
+      // オプション無効化時（true → false）：除外状態をクリア
       setPreviousCharacters(new Set());
     }
+
+    prevExcludePreviousRef.current = excludePreviousCharacters;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [excludePreviousCharacters]);
 
   const startRoulette = useCallback(() => {
@@ -177,11 +188,12 @@ export function Roulette() {
 
     await Promise.all(spinPromises);
 
-    // 今回選択したキャラクターを一時保存（次回のルーレット開始時に×マーク表示）
-    if (excludePreviousCharacters) {
-      const newLastSelected = new Set(selectedCharacters.map(c => c.id));
-      setLastSelectedCharacters(newLastSelected);
-    }
+    // 今回選択したキャラクターを常に一時保存（オプション状態に関わらず）
+    const newLastSelected = new Set(selectedCharacters.map(c => c.id));
+    setLastSelectedCharacters(newLastSelected);
+
+    // ルーレット停止時は×マークをクリア（次回開始時に表示）
+    setPreviousCharacters(new Set());
 
     setIsSpinning(false);
     setIsStopping(false);
