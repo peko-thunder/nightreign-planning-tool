@@ -20,14 +20,30 @@ function getAvailableCharacters(unlockedTypes: UnlockedTypes): Character[] {
   return CHARACTERS.filter((c) => unlockedTypes[c.type]);
 }
 
-function selectRandomCharacters(allowDuplicates: boolean, availableCharacters: Character[]): Character[] {
+function selectRandomCharacters(
+  allowDuplicates: boolean,
+  availableCharacters: Character[],
+  excludePrevious: boolean,
+  previousCharacterIds: Set<string>
+): Character[] {
   if (availableCharacters.length === 0) return [];
+
+  // 前回のキャラクターを除外
+  let candidateCharacters = availableCharacters;
+  if (excludePrevious && previousCharacterIds.size > 0) {
+    candidateCharacters = availableCharacters.filter(c => !previousCharacterIds.has(c.id));
+    // 除外した結果、候補が0になった場合は除外を無効化
+    if (candidateCharacters.length === 0) {
+      candidateCharacters = availableCharacters;
+    }
+  }
+
   if (allowDuplicates) {
     return Array.from({ length: 3 }, () =>
-      availableCharacters[Math.floor(Math.random() * availableCharacters.length)]
+      candidateCharacters[Math.floor(Math.random() * candidateCharacters.length)]
     );
   }
-  const shuffled = shuffleArray(availableCharacters);
+  const shuffled = shuffleArray(candidateCharacters);
   return shuffled.slice(0, Math.min(3, shuffled.length));
 }
 
@@ -42,6 +58,9 @@ export function Roulette() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [allowDuplicates, setAllowDuplicates] = useState(false);
+  const [excludePreviousCharacters, setExcludePreviousCharacters] = useState(false);
+  const [lastSelectedCharacters, setLastSelectedCharacters] = useState<Set<string>>(new Set());
+  const [previousCharacters, setPreviousCharacters] = useState<Set<string>>(new Set());
   const [unlockedTypes, setUnlockedTypes] = useState<UnlockedTypes>({
     base: true,
     unlock: true,
@@ -99,9 +118,21 @@ export function Roulette() {
     };
   }, []);
 
+  // 除外オプションが無効化されたら除外状態をクリア
+  useEffect(() => {
+    if (!excludePreviousCharacters) {
+      setPreviousCharacters(new Set());
+    }
+  }, [excludePreviousCharacters]);
+
   const startRoulette = useCallback(() => {
     if (isSpinning || isStopping) return;
     if (availableCharacters.length === 0) return;
+
+    // 前回の選択結果を除外対象に設定（×マーク表示）
+    if (excludePreviousCharacters && lastSelectedCharacters.size > 0) {
+      setPreviousCharacters(new Set(lastSelectedCharacters));
+    }
 
     setIsSpinning(true);
     setPlayers(INITIAL_PLAYERS.map((p) => ({ ...p })));
@@ -109,14 +140,19 @@ export function Roulette() {
     players.forEach((_, index) => {
       startSpinInterval(index);
     });
-  }, [isSpinning, isStopping, players, availableCharacters, startSpinInterval]);
+  }, [isSpinning, isStopping, players, availableCharacters, excludePreviousCharacters, lastSelectedCharacters, startSpinInterval]);
 
   const stopRoulette = useCallback(async () => {
     if (!isSpinning || isStopping) return;
 
     setIsStopping(true);
 
-    const selectedCharacters = selectRandomCharacters(allowDuplicates, availableCharacters);
+    const selectedCharacters = selectRandomCharacters(
+      allowDuplicates,
+      availableCharacters,
+      excludePreviousCharacters,
+      previousCharacters
+    );
 
     const spinPromises = players.map((_, index) => {
       const duration = 300 + index * 500;
@@ -140,14 +176,23 @@ export function Roulette() {
 
     await Promise.all(spinPromises);
 
+    // 今回選択したキャラクターを常に一時保存（オプション状態に関わらず）
+    const newLastSelected = new Set(selectedCharacters.map(c => c.id));
+    setLastSelectedCharacters(newLastSelected);
+
+    // ルーレット停止時は×マークをクリア（次回開始時に表示）
+    setPreviousCharacters(new Set());
+
     setIsSpinning(false);
     setIsStopping(false);
-  }, [isSpinning, isStopping, players, allowDuplicates, availableCharacters, startSpinInterval, stopSpinInterval]);
+  }, [isSpinning, isStopping, players, allowDuplicates, availableCharacters, excludePreviousCharacters, previousCharacters, startSpinInterval, stopSpinInterval]);
 
   const resetRoulette = useCallback(() => {
     if (isSpinning || isStopping) return;
 
     setPlayers(INITIAL_PLAYERS.map((p) => ({ ...p })));
+    setLastSelectedCharacters(new Set());
+    setPreviousCharacters(new Set());
   }, [isSpinning, isStopping]);
 
   return (
@@ -157,6 +202,7 @@ export function Roulette() {
         selectedCharacters={selectedCharactersMap}
         spinningCharacters={spinningCharacters}
         lockedCharacterIds={lockedCharacterIds}
+        excludedCharacterIds={excludePreviousCharacters ? previousCharacters : undefined}
       />
 
       {/* 下部：プレイヤースロット */}
@@ -184,6 +230,16 @@ export function Roulette() {
               className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
             />
             <span className="text-sm">キャラクター被りを許可</span>
+          </label>
+          <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={excludePreviousCharacters}
+              onChange={(e) => setExcludePreviousCharacters(e.target.checked)}
+              disabled={isSpinning || isStopping}
+              className="w-4 h-4 accent-nightreign-gold cursor-pointer disabled:cursor-not-allowed"
+            />
+            <span className="text-sm">前回のキャラクターを除外</span>
           </label>
           <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
             <input

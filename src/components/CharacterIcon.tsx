@@ -10,6 +10,7 @@ interface CharacterIconProps {
   isSelected?: boolean;
   isSpinningTarget?: boolean;
   isLocked?: boolean;
+  isExcluded?: boolean;
   playerColors?: PlayerColor[];
   onClick?: () => void;
 }
@@ -47,6 +48,7 @@ export function CharacterIcon({
   isSelected = false,
   isSpinningTarget = false,
   isLocked = false,
+  isExcluded = false,
   playerColors = [],
   onClick,
 }: CharacterIconProps) {
@@ -60,7 +62,7 @@ export function CharacterIcon({
   }, [character.id]);
 
   const ringStyle = (() => {
-    if (isSpinningTarget) {
+    if (isSpinningTarget && !isExcluded) {
       return "ring-2 ring-nightreign-gold shadow-[0_0_12px_rgba(201,162,39,0.6)]";
     }
     if (hasSelection) {
@@ -96,6 +98,7 @@ export function CharacterIcon({
         relative overflow-hidden
         ${ringStyle}
         ${isSelected ? "opacity-60" : ""}
+        ${isExcluded ? "opacity-40" : ""}
         ${onClick ? "cursor-pointer hover:brightness-110" : ""}
         transition-all duration-75
       `}
@@ -119,6 +122,17 @@ export function CharacterIcon({
 
       {/* 暗いオーバーレイ */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+
+      {/* 除外マーク */}
+      {isExcluded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="relative">
+            <span className="text-6xl font-bold text-red-500 select-none drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]">
+              ×
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* プレイヤー色の丸円（左上） */}
       {playerColors.length > 0 && (
