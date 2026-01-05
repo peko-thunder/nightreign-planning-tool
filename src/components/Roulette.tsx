@@ -59,6 +59,7 @@ export function Roulette() {
   const [isStopping, setIsStopping] = useState(false);
   const [allowDuplicates, setAllowDuplicates] = useState(false);
   const [excludePreviousCharacters, setExcludePreviousCharacters] = useState(false);
+  const [lastSelectedCharacters, setLastSelectedCharacters] = useState<Set<string>>(new Set());
   const [previousCharacters, setPreviousCharacters] = useState<Set<string>>(new Set());
   const [unlockedTypes, setUnlockedTypes] = useState<UnlockedTypes>({
     base: true,
@@ -120,6 +121,7 @@ export function Roulette() {
   // 除外オプションが無効化されたら前回のキャラクターをクリア
   useEffect(() => {
     if (!excludePreviousCharacters) {
+      setLastSelectedCharacters(new Set());
       setPreviousCharacters(new Set());
     }
   }, [excludePreviousCharacters]);
@@ -128,13 +130,18 @@ export function Roulette() {
     if (isSpinning || isStopping) return;
     if (availableCharacters.length === 0) return;
 
+    // 前回の選択結果を除外対象に設定（×マーク表示）
+    if (excludePreviousCharacters && lastSelectedCharacters.size > 0) {
+      setPreviousCharacters(new Set(lastSelectedCharacters));
+    }
+
     setIsSpinning(true);
     setPlayers(INITIAL_PLAYERS.map((p) => ({ ...p })));
 
     players.forEach((_, index) => {
       startSpinInterval(index);
     });
-  }, [isSpinning, isStopping, players, availableCharacters, startSpinInterval]);
+  }, [isSpinning, isStopping, players, availableCharacters, excludePreviousCharacters, lastSelectedCharacters, startSpinInterval]);
 
   const stopRoulette = useCallback(async () => {
     if (!isSpinning || isStopping) return;
@@ -170,10 +177,10 @@ export function Roulette() {
 
     await Promise.all(spinPromises);
 
-    // 前回のキャラクターを記録
+    // 今回選択したキャラクターを一時保存（次回のルーレット開始時に×マーク表示）
     if (excludePreviousCharacters) {
-      const newPreviousCharacters = new Set(selectedCharacters.map(c => c.id));
-      setPreviousCharacters(newPreviousCharacters);
+      const newLastSelected = new Set(selectedCharacters.map(c => c.id));
+      setLastSelectedCharacters(newLastSelected);
     }
 
     setIsSpinning(false);
@@ -184,6 +191,7 @@ export function Roulette() {
     if (isSpinning || isStopping) return;
 
     setPlayers(INITIAL_PLAYERS.map((p) => ({ ...p })));
+    setLastSelectedCharacters(new Set());
     setPreviousCharacters(new Set());
   }, [isSpinning, isStopping]);
 
