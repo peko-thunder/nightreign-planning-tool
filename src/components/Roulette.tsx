@@ -68,7 +68,6 @@ export function Roulette() {
   });
   const [spinningCharacters, setSpinningCharacters] = useState<(Character | null)[]>([null, null, null]);
   const spinIntervalsRef = useRef<(NodeJS.Timeout | null)[]>([null, null, null]);
-  const prevExcludePreviousRef = useRef(excludePreviousCharacters);
 
   const availableCharacters = useMemo(
     () => getAvailableCharacters(unlockedTypes),
@@ -119,22 +118,11 @@ export function Roulette() {
     };
   }, []);
 
-  // 除外オプションの変化を監視
+  // 除外オプションが無効化されたら除外状態をクリア
   useEffect(() => {
-    const prevValue = prevExcludePreviousRef.current;
-
-    if (!prevValue && excludePreviousCharacters) {
-      // オプション有効化時（false → true）：現在の選択結果を除外対象に設定
-      if (lastSelectedCharacters.size > 0) {
-        setPreviousCharacters(new Set(lastSelectedCharacters));
-      }
-    } else if (prevValue && !excludePreviousCharacters) {
-      // オプション無効化時（true → false）：除外状態をクリア
+    if (!excludePreviousCharacters) {
       setPreviousCharacters(new Set());
     }
-
-    prevExcludePreviousRef.current = excludePreviousCharacters;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [excludePreviousCharacters]);
 
   const startRoulette = useCallback(() => {
