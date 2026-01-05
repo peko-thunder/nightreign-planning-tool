@@ -194,6 +194,7 @@ export function Roulette() {
         selectedCharacters={selectedCharactersMap}
         spinningCharacters={spinningCharacters}
         lockedCharacterIds={lockedCharacterIds}
+        excludedCharacterIds={excludePreviousCharacters ? previousCharacters : undefined}
       />
 
       {/* 下部：プレイヤースロット */}

@@ -8,6 +8,7 @@ interface CharacterSelectProps {
   selectedCharacters: Map<string, PlayerColor[]>;
   spinningCharacters?: (Character | null)[];
   lockedCharacterIds?: Set<string>;
+  excludedCharacterIds?: Set<string>;
   onCharacterClick?: (character: Character) => void;
 }
 
@@ -15,6 +16,7 @@ export function CharacterSelect({
   selectedCharacters,
   spinningCharacters,
   lockedCharacterIds,
+  excludedCharacterIds,
   onCharacterClick,
 }: CharacterSelectProps) {
   const getPlayerColors = (characterId: string): PlayerColor[] => {
@@ -37,6 +39,7 @@ export function CharacterSelect({
           const playerColors = getPlayerColors(character.id);
           const isSpinningTarget = spinningCharacterIds.has(character.id);
           const isLocked = lockedCharacterIds?.has(character.id) ?? false;
+          const isExcluded = excludedCharacterIds?.has(character.id) ?? false;
           return (
             <CharacterIcon
               key={character.id}
@@ -45,6 +48,7 @@ export function CharacterSelect({
               isSelected={playerColors.length > 0}
               isSpinningTarget={isSpinningTarget}
               isLocked={isLocked}
+              isExcluded={isExcluded}
               playerColors={playerColors}
               onClick={onCharacterClick ? () => onCharacterClick(character) : undefined}
             />
