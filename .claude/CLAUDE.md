@@ -130,3 +130,43 @@ import { Roulette } from '@/components/Roulette'
 - `next.config.ts`: `output: "export"` で静的エクスポート
 - 画像最適化は無効化（`unoptimized: true`）
 - Vercelへのデプロイに最適化
+
+## Claude Code Hooks
+
+Claude Codeの動作をカスタマイズするhooksを設定。
+
+### 設定ファイル
+
+- **設定:** `.claude/settings.json`
+- **スクリプト:** `.claude/hooks/`
+
+### PreToolUse フック
+
+ツール実行前に発火するフック。
+
+| 対象ツール | スクリプト | 説明 |
+|-----------|-----------|------|
+| Read, Grep | `read_hook.js` | `.env`ファイルへのアクセスをブロック |
+
+**read_hook.js の動作:**
+- 読み取り対象パスに`.env`が含まれる場合、エラーを出力して処理を中断（exit code 2）
+- 機密情報の漏洩防止が目的
+
+### PostToolUse フック
+
+ツール実行後に発火するフック。
+
+| 対象ツール | 処理 | 説明 |
+|-----------|------|------|
+| Write, Edit, MultiEdit | Prettier | 編集されたファイルを自動フォーマット |
+| Write, Edit, MultiEdit | `tsc.js` | TypeScript型チェックを実行 |
+
+**Prettier の動作:**
+- `npx prettier --write`で編集ファイルをフォーマット
+- エラーは無視して処理を継続
+
+**tsc.js の動作:**
+- `.ts`/`.tsx`ファイルの編集時のみ実行
+- `tsconfig.json`を使用して型チェック（`noEmit: true`）
+- 型エラーがある場合、エラーを出力して処理を中断（exit code 2）
+- 型安全性の維持が目的
